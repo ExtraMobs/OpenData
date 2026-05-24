@@ -1,0 +1,5 @@
+{
+    "api-port": 5002,
+    "gateway-port": 8081,
+    "swarm-port": 4002
+}
