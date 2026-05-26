@@ -1,8 +1,8 @@
-from brazil.cnpj import CNPJ
+from brazil.cnpj.cnpj import CNPJ
 
 
 def main():
-    CNPJ.download()
+    CNPJ.process()
 
 
 if __name__ == "__main__":
