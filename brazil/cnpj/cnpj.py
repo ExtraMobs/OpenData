@@ -1,17 +1,15 @@
-import csv
-import os
 import shutil
 import zipfile
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from pprint import pp
 from typing import Generator
 
 import requests
 
-from brazil.cnpj.raw_dataset_types import RawDataset
-from brazil.exception import LowerMinDateError
 from general.exception import MissingArgumentError
+
+from ..exception import LowerMinDateError
+from .etl_context import EtlContext
 
 
 class CNPJ:
@@ -90,6 +88,10 @@ class CNPJ:
         for i in CNPJ.downloaded_months(
             starter_month=target_date.month, starter_year=target_date.year
         ):
+            etl_context = EtlContext()
+
+            zip_paths = {}
+
             with zipfile.ZipFile(i, "r") as zip_ref:
                 for file_info in zip_ref.filelist:
 
@@ -102,14 +104,36 @@ class CNPJ:
                         )
                         continue
 
-                    extracted_path = Path(
-                        zip_ref.extract(file_info, path="./temp/")
-                    ).absolute()
+                    tail_path = Path(file_info.filename)
+                    target_extracted_path = Path("./temp/").absolute()
 
-                    _type = RawDataset.type_from_filename(extracted_path)
-                    if _type == None:
+                    predicted_extracted_path = target_extracted_path.joinpath(tail_path)
+
+                    zip_paths[predicted_extracted_path.stem.lower()] = (
+                        predicted_extracted_path
+                    )
+
+                    if predicted_extracted_path.exists():
                         continue
 
-                    _type.process(extracted_path)
+                    zip_ref.extract(file_info, path=target_extracted_path)
+
+            etl_context.update_from_zip_path(zip_paths.pop("cnaes"))
+            etl_context.update_from_zip_path(zip_paths.pop("municipios"))
+            etl_context.update_from_zip_path(zip_paths.pop("motivos"))
+            etl_context.update_from_zip_path(zip_paths.pop("naturezas"))
+            etl_context.update_from_zip_path(zip_paths.pop("paises"))
+            etl_context.update_from_zip_path(zip_paths.pop("qualificacoes"))
+            etl_context.update_from_zip_path(zip_paths.pop("simples"))
+
+            for i in range(10):
+                i = (i + 1) % 10
+                path = zip_paths.pop(f"empresas{i}")
+                etl_context.update_from_zip_path(path)
+
+            for i in range(10):
+                i = (i + 1) % 10
+                path = zip_paths.pop(f"estabelecimentos{i}")
+                etl_context.update_from_zip_path(path)
 
             shutil.rmtree(i.parent.joinpath(i.stem))
