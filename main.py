@@ -1,8 +1,12 @@
-from brazil.cnpj.cnpj import CNPJ
+import general.zip
+from ipfs.ipfs import IPFS
 
 
 def main():
-    CNPJ.process()
+    IPFS.init()
+
+    IPFS.close_daemon()
+    # CNPJ.download()
 
 
 if __name__ == "__main__":
