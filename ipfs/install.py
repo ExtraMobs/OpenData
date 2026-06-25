@@ -1,7 +1,7 @@
 import io
 import sys
 import tarfile
-from pathlib import Path
+import zipfile
 
 import requests
 
@@ -16,17 +16,31 @@ def ipfs_is_installed():
 
 
 def download_ipfs(tag: GitTag):
-    url = f"https://github.com/ipfs/kubo/releases/download/v0.41.0/kubo_{tag.tag[10:]}_linux-amd64.tar.gz"
+    os_name = sys.platform
+    version = tag.tag[10:]
+
+    if os_name == "win32":
+        filename = f"kubo_{version}_windows-amd64.zip"
+    else:
+        filename = f"kubo_{version}_linux-amd64.tar.gz"
+
+    url = f"https://github.com/ipfs/kubo/releases/download/{version}/{filename}"
 
     response = requests.get(url)
 
     if response.status_code == 200:
         content = io.BytesIO(response.content)
 
-        with tarfile.open(fileobj=content) as tar:
-            tar.extractall(APP_FOLDER.joinpath("bin/"))
+        extract_path = APP_FOLDER.joinpath("bin/")
+
+        if os_name == "win32":
+            with zipfile.ZipFile(content) as zip_ref:
+                zip_ref.extractall(extract_path)
+        else:
+            with tarfile.open(fileobj=content) as tar:
+                tar.extractall(extract_path)
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(f"Falha ao baixar IPFS: {response.status_code}")
 
 
 def install_ipfs():
