@@ -1,8 +1,10 @@
+import general.zip
 from ipfs.ipfs import IPFS
 
 
 def main():
     IPFS.init()
+
     IPFS.close_daemon()
     # CNPJ.download()
 
