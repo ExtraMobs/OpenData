@@ -130,10 +130,31 @@ class CNPJ:
                 i = (i + 1) % 10
                 path = zip_paths.pop(f"empresas{i}")
                 etl_context.update_from_zip_path(path)
+            
+            etl_context.local_cache.execute_query("""
+                CREATE INDEX idx_empresas_cnpj ON empresas (cnpj_basico);
+            """)
+            etl_context.local_cache.commit()
 
             for i in range(10):
                 i = (i + 1) % 10
                 path = zip_paths.pop(f"estabelecimentos{i}")
                 etl_context.update_from_zip_path(path)
+            
+            etl_context.local_cache.execute_query("""
+                CREATE INDEX idx_estabelecimentos_cnpj ON estabelecimentos (cnpj_basico, cnpj_ordem, cnpj_dv);
+            """)
+            etl_context.local_cache.commit()
 
+            for i in range(10):
+                i = (i + 1) % 10
+                path = zip_paths.pop(f"socios{i}")
+                etl_context.update_from_zip_path(path)
+            
+            etl_context.local_cache.execute_query("""
+                CREATE INDEX idx_socios_cnpj ON socios (cnpj_basico);
+            """)
+            etl_context.local_cache.commit()
+
+            etl_context.local_cache.close()
             shutil.rmtree(i.parent.joinpath(i.stem))
