@@ -1,5 +1,9 @@
+import json
 import os
 import subprocess
+from collections.abc import Iterable
+
+import requests
 
 import globals
 
@@ -89,3 +93,59 @@ class IPFS:
             env=env,
             check=False,
         )
+
+
+class IPFSRPC:
+    API_URL = f"http://localhost:{globals.CONFIGS["api-port"]}/api/v0"
+    __SESSION = requests.Session()
+
+    @classmethod
+    def dag_put(
+        cls,
+        data: dict[str],
+        store_codec="dag-cbor",
+        input_codec="dag-json",
+        pin=False,
+        hash="sha2-256",
+        allow_big_block=False,
+    ) -> str:
+        r = cls.__SESSION.post(
+            f"{cls.API_URL}/dag/put",
+            params={
+                "store-codec": store_codec,
+                "input-codec": input_codec,
+                "pin": str(pin).lower(),
+                "hash": hash,
+                "allow-big-block": str(allow_big_block).lower(),
+            },
+            files=json.dumps(data, separators=(",", ":")),
+        )
+        r.raise_for_status()
+
+        return r.json()["Cid"]["/"]
+
+    @classmethod
+    def dag_block(
+        cls,
+        data: list[Iterable[bytes]],
+        cid_codec="raw",
+        mhtype="sha2-256",
+        mhlen=-1,
+        pin=False,
+        allow_big_block=False,
+    ) -> list[str]:
+        r = cls.__SESSION.post(
+            f"{cls.API_URL}/block/put",
+            params={
+                "cid-codec": cid_codec,
+                "mhtype": mhtype,
+                "mhlen": mhlen,
+                "pin": str(pin).lower(),
+                "allow-big-block": str(allow_big_block).lower(),
+            },
+            files=data,
+        )
+
+        r.raise_for_status()
+        b = [json.loads(c) for c in r.text.strip().split("\n")]
+        return [k["Key"] for k in b]

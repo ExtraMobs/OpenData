@@ -10,6 +10,7 @@ import requests
 
 from general.exception import MissingArgumentError
 from general.tools.downloader import HTTPDownloader
+from ipfs.ipfs import IPFSRPC
 
 from ..exception import DateLowerThanPublicError
 
@@ -90,15 +91,16 @@ class CNPJ:
             yield download_file
 
     @staticmethod
-    def __get_file(zip_path_info: zipfile.ZipInfo) -> str:
-        if zip_path_info.is_dir():
-            return
+    def __get_filename_from(filelist: list[zipfile.ZipInfo]) -> Generator[str]:
+        for zip_path_info in filelist:
+            if zip_path_info.is_dir():
+                continue
 
-        if not zip_path_info.filename.endswith(".zip"):
-            print(f"[WARN] Caminho {zip_path_info.filename} não é um zip.")
-            return
+            if not zip_path_info.filename.endswith(".zip"):
+                print(f"[WARN] Caminho {zip_path_info.filename} não é um zip.")
+                continue
 
-        return zip_path_info.filename
+            yield zip_path_info.filename
 
     @classmethod
     def process(cls):
@@ -108,17 +110,24 @@ class CNPJ:
 
         for i in CNPJ.downloaded_zips(target_date):
             with zipfile.ZipFile(i, "r") as zip_handler:
-                for zip_path_info in zip_handler.filelist:
-                    file = cls.__get_file(zip_path_info)
-                    if not file is None:
-                        with (
-                            zip_handler.open(file) as inner_zip_stream,
-                            zipfile.ZipFile(inner_zip_stream) as inner_zip_handler,
-                            inner_zip_handler.open(
-                                inner_zip_handler.filelist[0]
-                            ) as deepest_inner_file,
-                        ):
-                            for line in deepest_inner_file:
-                                # Leitura de zip aninhado
-                                # com uso de memória otimizada
-                                line.decode("latin-1").strip()
+                for filename in cls.__get_filename_from(zip_handler.filelist):
+                    with (
+                        zip_handler.open(filename) as inner_zip_stream,
+                        zipfile.ZipFile(inner_zip_stream) as inner_zip_handler,
+                        inner_zip_handler.open(
+                            inner_zip_handler.filelist[0]
+                        ) as raw_bytes,
+                    ):
+                        target_path = Path(inner_zip_handler.filename).with_suffix("")
+
+                        leafs = []
+
+                        for line in raw_bytes:
+                            leafs.append(line)
+                            if len(leafs) == 256:
+                                # TODO: Gera os CIDs com sucesso mas falta linkar em um dag
+                                
+                                cids = IPFSRPC.dag_block(
+                                    [("file", c) for c in leafs], pin=True
+                                )
+                                print(cids)
