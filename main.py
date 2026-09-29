@@ -1,4 +1,3 @@
-import general.zip
 from brazil.cnpj.cnpj import CNPJ
 from ipfs.ipfs import IPFS
 

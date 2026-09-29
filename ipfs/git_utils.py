@@ -1,5 +1,5 @@
 import subprocess
-from typing import List
+from typing import Self
 
 
 class GitTag:
@@ -8,7 +8,7 @@ class GitTag:
         self.tag = tag
 
     @staticmethod
-    def from_cli_ordered(repository_url: str) -> List[GitTag]:
+    def from_cli_ordered(repository_url: str) -> list[Self]:
         result = subprocess.run(
             args=[
                 "git",
@@ -19,6 +19,7 @@ class GitTag:
                 repository_url,
             ],
             capture_output=True,
+            check=False,
         )
 
         to_result = []
@@ -39,7 +40,7 @@ class GitTag:
         return GitTag(hash=hash, tag=tag)
 
     @staticmethod
-    def get_lastest(tags: List[GitTag]) -> GitTag:
+    def get_lastest(tags: list[Self]) -> Self:
         for tag in tags:
             if tag.tag.split(".")[-1].isdigit():
                 return tag

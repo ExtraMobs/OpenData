@@ -27,7 +27,9 @@ class IPFS:
 
         if not globals.IPFS_STORAGE_PATH.exists():
             subprocess.run(
-                args=[str(globals.IPFS_BIN_PATH), "init"], env=env_customizado
+                args=[str(globals.IPFS_BIN_PATH), "init"],
+                env=env_customizado,
+                check=False,
             )
 
         IPFS.__config_api_port(
@@ -58,6 +60,7 @@ class IPFS:
                 f"/ip4/127.0.0.1/tcp/{port}",
             ],
             env=env,
+            check=False,
         )
 
     @staticmethod
@@ -70,6 +73,7 @@ class IPFS:
                 f"/ip4/127.0.0.1/tcp/{port}",
             ],
             env=env,
+            check=False,
         )
 
     @staticmethod
@@ -80,7 +84,8 @@ class IPFS:
                 "config",
                 "--json",
                 "Addresses.Swarm",
-                f'["/ip4/0.0.0.0/tcp/{port}", "/ip4/0.0.0.0/udp/{port}/quic-v1"]',  # Corrigido: Array JSON
+                f'["/ip4/0.0.0.0/tcp/{port}", "/ip4/0.0.0.0/udp/{port}/quic-v1"]',
             ],
             env=env,
+            check=False,
         )

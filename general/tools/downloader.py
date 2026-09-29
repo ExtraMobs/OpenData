@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+import requests
+
 
 class Downloader(ABC):
     base_url: str
@@ -13,6 +15,12 @@ class Downloader(ABC):
 
 
 class HTTPDownloader(Downloader):
-    @abstractmethod
-    def download(self):
-        pass
+    @staticmethod
+    def download(url: str) -> requests.Response:
+        response = requests.get(
+            url,
+            stream=True,
+        )
+        response.raise_for_status()
+
+        return response
